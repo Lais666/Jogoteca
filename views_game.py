@@ -21,28 +21,31 @@ def novo():
 def criar():
     form = FormularioJogo(request.form)
 
-    if form.validate_on_submit():
-        nome = form.nome.data
-        categoria = form.categoria.data
-        console = form.console.data
+    try:
+        if form.validate_on_submit():
+            nome = form.nome.data
+            categoria = form.categoria.data
+            console = form.console.data
 
-        jogo = Jogos.query.filter_by(nome=nome).first()
+            jogo = Jogos.query.filter_by(nome=nome).first()
 
-        if jogo:
-            flash('Jogo já existente!')
+            if jogo:
+                flash('Jogo já existente!')
+            else:
+                novo_jogo = Jogos(nome=nome, categoria=categoria, console=console)
+                db.session.add(novo_jogo)
+                db.session.commit()
+
+                arquivo = request.files['arquivo']
+                upload_path = app.config['UPLOAD_PATH']
+                timestamp = time.time()
+                arquivo.save(f'{upload_path}/capa{novo_jogo.id}-{timestamp}.jpg')
+
+                flash('Jogo criado com sucesso!')
         else:
-            novo_jogo = Jogos(nome=nome, categoria=categoria, console=console)
-            db.session.add(novo_jogo)
-            db.session.commit()
-
-            arquivo = request.files['arquivo']
-            upload_path = app.config['UPLOAD_PATH']
-            timestamp = time.time()
-            arquivo.save(f'{upload_path}/capa{novo_jogo.id}-{timestamp}.jpg')
-
-            flash('Jogo criado com sucesso!')
-    else:
-        flash('Erro de validação do formulário!')
+            flash('Erro de validação do formulário!')
+    except Exception as e:
+        flash(f'Ocorreu um erro ao processar o formulário: {str(e)}')
 
     return redirect(url_for('index'))
 
