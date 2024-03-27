@@ -17,33 +17,35 @@ def novo():
     form = FormularioJogo()
     return render_template('novo.html', titulo='Novo Jogo', form=form)
 
-@app.route('/criar', methods=['POST',])
+@app.route('/criar', methods=['POST'])
 def criar():
     form = FormularioJogo(request.form)
 
-    if not form.validate_on_submit():
-        return redirect(url_for('novo'))
+    if form.validate_on_submit():
+        nome = form.nome.data
+        categoria = form.categoria.data
+        console = form.console.data
 
-    nome = form.nome.data
-    categoria = form.categoria.data
-    console = form.console.data
+        jogo = Jogos.query.filter_by(nome=nome).first()
 
-    jogo = Jogos.query.filter_by(nome=nome).first()
+        if jogo:
+            flash('Jogo já existente!')
+        else:
+            novo_jogo = Jogos(nome=nome, categoria=categoria, console=console)
+            db.session.add(novo_jogo)
+            db.session.commit()
 
-    if jogo:
-        flash('Jogo já existente!')
-        return redirect(url_for('index'))
+            arquivo = request.files['arquivo']
+            upload_path = app.config['UPLOAD_PATH']
+            timestamp = time.time()
+            arquivo.save(f'{upload_path}/capa{novo_jogo.id}-{timestamp}.jpg')
 
-    novo_jogo = Jogos(nome=nome, categoria=categoria, console=console)
-    db.session.add(novo_jogo)
-    db.session.commit()
-
-    arquivo = request.files['arquivo']
-    upload_path = app.config['UPLOAD_PATH']
-    timestamp = time.time()
-    arquivo.save(f'{upload_path}/capa{novo_jogo.id}-{timestamp}.jpg')
+            flash('Jogo criado com sucesso!')
+    else:
+        flash('Erro de validação do formulário!')
 
     return redirect(url_for('index'))
+
 
 @app.route('/editar/<int:id>')
 def editar(id):
